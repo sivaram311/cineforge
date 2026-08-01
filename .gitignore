@@ -36,3 +36,7 @@ htmlcov/
 *~
 .DS_Store
 Thumbs.db
+
+# Character image assets (local binaries — do not commit)
+assets/characters/
+assets/characters/Characters.zip

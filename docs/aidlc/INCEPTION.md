@@ -144,7 +144,7 @@ Nothing is deployed to F: or G: during Inception. Drive roles must not be mixed.
 | Clip length | WAN 2.6 caps ~15s per clip — longer movies require multi-clip stitch (future) |
 | Output storage / retention | Where clips land locally vs. remote URLs; retention policy TBD |
 | Auth | CSS vs. documented waiver (see above) — unresolved |
-| MCP vs REST | Dual path: MCP for agent/interactive ops; REST for reliable CLI automation. Clarify which path owns which Bolts |
+| MCP vs REST | Dual path resolved: hosted-OAuth MCP wired in `.cursor/mcp.json` (see `docs/RUNPOD-MCP-SETUP.md`) for agent/interactive ops; REST client remains for scripted/CI-safe calls |
 | ComfyUI workflow versioning | Workflow JSON may drift with worker image updates |
 
 ---
