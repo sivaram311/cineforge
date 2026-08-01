@@ -78,4 +78,12 @@ Evidence expectations: unit tests where noted; for paid RunPod calls, manual smo
 
 ## Infra note — Network volume provisioned
 
-Persistent Network Volume `ai-film-workspace` (`f0imtkpmfh`, 150 GB, `EU-RO-1`) now exists — see `docs/aidlc/INFRA.md`. Not attached to a Pod yet; a future Bolt should cover GPU Pod deployment and volume attachment (prerequisite for longer-lived workspace storage beyond Bolt 3's one-shot Serverless smoke).
+Persistent Network Volume `ai-film-workspace` (`f0imtkpmfh`, 150 GB, `EU-RO-1`) now exists — see `docs/aidlc/INFRA.md`. Now attached to pod `t3s9yfpovyi2um` at `/workspace`.
+
+## Infra note — ComfyUI live on manually-created pod
+
+ComfyUI is live on pod `t3s9yfpovyi2um` (`mid_coffee_goldfish`, RTX 4090, `EU-RO-1`, image `ghcr.io/ai-dock/comfyui:latest-cuda`) — access via https://t3s9yfpovyi2um-8188.proxy.runpod.net/. Full facts, root-cause/fix, and security notes are in `docs/aidlc/INFRA.md`.
+
+A real Bolt is still needed to:
+1. Figure out why API-driven pod creation fails (immediate platform-side exit) while RunPod console creation works.
+2. Secure Jupyter access (enable auth / `WEB_ENABLE_AUTH=true`) before this pod is used for anything beyond throwaway testing — the Jupyter proxy is currently unauthenticated despite a configured password.
