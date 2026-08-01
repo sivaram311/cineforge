@@ -11,9 +11,8 @@ cineforge is a movie-generation pipeline that orchestrates [RunPod](https://www.
 
 ## Getting started
 
-Real setup instructions land with the first Construction Bolt (project skeleton, `pip install -e .`, env contract). Until then:
+1. `pip install -e .`
+2. Copy `.env.example` to `.env` and fill in `RUNPOD_API_KEY=` (and `RUNPOD_ENDPOINT_ID=` if using `generate`)
+3. Run `cineforge balance` or `cineforge generate --prompt "..."`
 
-1. Read `docs/aidlc/INCEPTION.md`
-2. Pick the next open Bolt from `docs/aidlc/BOLTS.md`
-
-Do not commit secrets. Use `.env` locally (gitignored); `.env.example` will list placeholder names only.
+Do not commit secrets. Use `.env` locally (gitignored); `.env.example` lists placeholder names only.

@@ -3,9 +3,10 @@
 Usage::
 
     cineforge generate --prompt "a sunset over the ocean"
+    cineforge balance
 
-Requires ``RUNPOD_API_KEY`` and ``RUNPOD_ENDPOINT_ID`` in the environment
-(or a local ``.env`` file). See ``.env.example``.
+Requires ``RUNPOD_API_KEY`` (and ``RUNPOD_ENDPOINT_ID`` for generate) in the
+environment or a local ``.env`` file. See ``.env.example``.
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ import json
 import sys
 
 from cineforge import __version__
+from cineforge.account import get_account_balance
 from cineforge.runpod_client import (
     RunPodAPIError,
     RunPodConfigError,
@@ -56,6 +58,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=600.0,
         help="Max seconds to wait for job completion (default: 600).",
     )
+
+    sub.add_parser(
+        "balance",
+        help="Print RunPod account balance / spend as JSON.",
+    )
     return parser
 
 
@@ -71,6 +78,19 @@ def main(argv: list[str] | None = None) -> int:
                 poll_interval=args.poll_interval,
                 timeout=args.timeout,
             )
+        except RunPodConfigError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        except RunPodAPIError as exc:
+            print(f"error: RunPod API failure: {exc}", file=sys.stderr)
+            return 1
+
+        print(json.dumps(result, indent=2, default=str))
+        return 0
+
+    if args.command == "balance":
+        try:
+            result = get_account_balance()
         except RunPodConfigError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2

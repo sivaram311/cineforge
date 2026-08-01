@@ -67,3 +67,9 @@ Evidence expectations: unit tests where noted; for paid RunPod calls, manual smo
 **Goal:** Before any multi-user or public-facing surface (including binding `:3400` / `:3401`), record either CSS integration plan or an explicit documented waiver per Inception.
 
 **Acceptance:** Decision written under `docs/aidlc/`; no silent no-auth assumption for network-facing deploy.
+
+---
+
+## Bolt 9 — Account balance check (shipped ad hoc)
+
+**Done.** `src/cineforge/account.py` (`get_account_balance()` via RunPod GraphQL `myself`) + `cineforge balance` CLI + `tests/test_account.py` (7 mocked unit tests). Built ad hoc ahead of the ordered backlog once a real API key became available (Cost control risk in INCEPTION.md).

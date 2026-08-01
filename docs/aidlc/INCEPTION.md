@@ -139,7 +139,7 @@ Nothing is deployed to F: or G: during Inception. Drive roles must not be mixed.
 
 | Topic | Note |
 |-------|------|
-| Cost control | Per-job billing; T2I ~$0.03/image; video cost scales with length/settings. Need budgets / dry-run / confirm-before-spend for live calls |
+| Cost control | Per-job billing; T2I ~$0.03/image; video cost scales with length/settings. `cineforge balance` can check account balance/spend rate on demand; budgets / dry-run / confirm-before-spend guardrails are still not built |
 | GPU availability / queueing | Serverless queues can delay jobs; UX and retries TBD |
 | Clip length | WAN 2.6 caps ~15s per clip — longer movies require multi-clip stitch (future) |
 | Output storage / retention | Where clips land locally vs. remote URLs; retention policy TBD |
