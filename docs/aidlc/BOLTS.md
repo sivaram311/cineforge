@@ -86,7 +86,7 @@ ComfyUI is live on pod `t3s9yfpovyi2um` (`mid_coffee_goldfish`, RTX 4090, `EU-RO
 
 A real Bolt is still needed to:
 1. Figure out why API-driven pod creation fails (immediate platform-side exit) while RunPod console creation works.
-2. Secure Jupyter access (enable auth / `WEB_ENABLE_AUTH=true`) before this pod is used for anything beyond throwaway testing — the Jupyter proxy is currently unauthenticated despite a configured password.
+2. ~~Secure Jupyter access~~ **Done** — `WEB_ENABLE_AUTH=true` is now set and enforced (verified: unauthenticated `/api/kernels` now 302s to a login portal). Turned out to gate every proxied port on the pod, not just Jupyter — see `docs/aidlc/INFRA.md` for the full auth architecture and the cross-subdomain cookie nuance for browser access.
 
 ---
 
