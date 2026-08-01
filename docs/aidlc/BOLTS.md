@@ -73,3 +73,9 @@ Evidence expectations: unit tests where noted; for paid RunPod calls, manual smo
 ## Bolt 9 — Account balance check (shipped ad hoc)
 
 **Done.** `src/cineforge/account.py` (`get_account_balance()` via RunPod GraphQL `myself`) + `cineforge balance` CLI + `tests/test_account.py` (7 mocked unit tests). Built ad hoc ahead of the ordered backlog once a real API key became available (Cost control risk in INCEPTION.md).
+
+---
+
+## Infra note — Network volume provisioned
+
+Persistent Network Volume `ai-film-workspace` (`f0imtkpmfh`, 150 GB, `EU-RO-1`) now exists — see `docs/aidlc/INFRA.md`. Not attached to a Pod yet; a future Bolt should cover GPU Pod deployment and volume attachment (prerequisite for longer-lived workspace storage beyond Bolt 3's one-shot Serverless smoke).
