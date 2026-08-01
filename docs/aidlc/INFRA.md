@@ -36,7 +36,15 @@ Tracks real RunPod cloud resources this project has provisioned (not code, not B
 | Public IP | `213.173.99.34` |
 | ComfyUI URL | https://t3s9yfpovyi2um-8188.proxy.runpod.net/ (RunPod `proxy.runpod.net` for HTTP ports — not direct IP:port) |
 | Created via | RunPod console (manual). All prior API-driven create attempts this session failed with an immediate platform-side exit for unresolved reasons; console creation worked where the API did not. |
-| Verified | `supervisorctl status comfyui` → RUNNING; internal `127.0.0.1:18188` and `:8188` → 200; external `/system_stats` → 200 with `comfyui_version` 0.29.2, `pytorch_version` 2.4.1+cu121, CUDA device `NVIDIA GeForce RTX 4090` |
+| Verified | Internal (SSH) `127.0.0.1:8188/system_stats` → 200 with `comfyui_version` 0.29.2, `pytorch_version` 2.4.1+cu121, CUDA device `NVIDIA GeForce RTX 4090`. This is what the orchestration pipeline actually uses (runs inside the pod) — external browser access is separately gated, see below. |
+
+### External browser access now requires portal login
+
+After enabling `WEB_ENABLE_AUTH=true` (see Known issues / security notes), ai-dock's Caddy layer gates **every** proxied HTTP port on this pod, not just Jupyter — including ComfyUI's `:8188`. Hitting `https://t3s9yfpovyi2um-8188.proxy.runpod.net/` directly now 302s to a login portal on a **different** port (`:1111`, `serviceportal` service): `https://t3s9yfpovyi2um-1111.proxy.runpod.net/login`, credentials `WEB_USER`/`WEB_PASSWORD` from pod env.
+
+**Important nuance:** the auth cookie set after logging in at the `:1111` portal is scoped to that port's own subdomain and does **not** carry over to `:8188`'s subdomain (they're distinct hostnames under `proxy.runpod.net`, not the same domain on different ports) — logging in through the portal once does not automatically unlock the ComfyUI UI in the same browser session in a single step; RunPod embeds this the way the portal is meant to be used (users normally reach ComfyUI's UI by clicking through from the portal's own service links, rather than pasting the `:8188` URL directly). If pasting the ComfyUI URL directly still shows the portal/login page after logging in, that's expected behavior given this cross-subdomain cookie scoping, not a bug.
+
+This does **not** block the actual generation pipeline — the orchestration script runs from inside the pod (SSH/Jupyter kernel) and talks to ComfyUI via `127.0.0.1:8188`, which bypasses the external Caddy auth layer entirely.
 
 ### Root cause / fix (ComfyUI startup)
 
