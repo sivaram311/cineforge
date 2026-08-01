@@ -87,3 +87,16 @@ ComfyUI is live on pod `t3s9yfpovyi2um` (`mid_coffee_goldfish`, RTX 4090, `EU-RO
 A real Bolt is still needed to:
 1. Figure out why API-driven pod creation fails (immediate platform-side exit) while RunPod console creation works.
 2. Secure Jupyter access (enable auth / `WEB_ENABLE_AUTH=true`) before this pod is used for anything beyond throwaway testing — the Jupyter proxy is currently unauthenticated despite a configured password.
+
+---
+
+## Bolt 10 — Video promo pipeline (6-scene, character-driven, not started)
+
+**Goal:** A 6-scene / 60-second promo video (4 characters, Tamil TTS voiceover) generated via ComfyUI on pod `t3s9yfpovyi2um`, orchestrated by a Python script.
+
+**Current status (see `docs/aidlc/INFRA.md` "Video promo pipeline" section for full detail):**
+- Character reference images: **uploaded** to `/workspace/ComfyUI/input/characters/`.
+- `ffmpeg`: present.
+- Everything else — video-generation custom nodes (IPAdapter/InstantID/AnimateDiff/Wan/LTX-Video/VideoHelperSuite), the multi-GB video model weights, a real exported API-format workflow JSON, and `edge-tts`/`moviepy` in the ComfyUI venv — **not yet in place**. This is real multi-step Construction work, not a quick follow-up.
+
+**Acceptance (not yet met):** the orchestration script runs end-to-end against this pod and produces `1min_tamil_promo_final.mp4`; each sub-step (node install, model download, workflow authoring, TTS+ffmpeg stitch) should land as its own reviewable sub-Bolt rather than one large unverified attempt, given how much this session's pod-creation and tooling troubleshooting cost in time — verify each layer before building the next.
