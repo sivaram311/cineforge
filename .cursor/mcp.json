@@ -1,7 +1,15 @@
 {
   "mcpServers": {
     "runpod": {
-      "url": "https://mcp.getrunpod.io/"
+      "command": "npx",
+      "args": ["-y", "@runpod/mcp-server@latest"],
+      "env": {
+        "RUNPOD_API_KEY": "${env:RUNPOD_API_KEY}"
+      },
+      "envFile": "${workspaceFolder}/.env"
+    },
+    "runpod-docs": {
+      "url": "https://docs.runpod.io/mcp"
     }
   }
 }

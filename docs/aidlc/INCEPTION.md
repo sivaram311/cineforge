@@ -118,7 +118,7 @@ Inception does **not** resolve this. Construction Bolts that add network-facing 
 - Use environment variables only (e.g. `RUNPOD_API_KEY`)
 - Root `.env.example` holds placeholder names only (`RUNPOD_API_KEY=`)
 - `.gitignore` must exclude `.env`
-- Hosted RunPod MCP (`https://mcp.getrunpod.io/`) uses OAuth Sign in with RunPod (no local API key for that path); self-hosted `@runpod/mcp-server` and direct REST still need keys via env
+- RunPod API MCP is local `npx @runpod/mcp-server` (needs `RUNPOD_API_KEY` in client env / `.env` — never commit the literal key); Docs MCP at `https://docs.runpod.io/mcp` is hosted read-only with no auth. Direct REST also needs keys via env. See `docs/RUNPOD-MCP-SETUP.md`
 
 ---
 
@@ -144,7 +144,7 @@ Nothing is deployed to F: or G: during Inception. Drive roles must not be mixed.
 | Clip length | WAN 2.6 caps ~15s per clip — longer movies require multi-clip stitch (future) |
 | Output storage / retention | Where clips land locally vs. remote URLs; retention policy TBD |
 | Auth | CSS vs. documented waiver (see above) — unresolved |
-| MCP vs REST | Dual path resolved: hosted-OAuth MCP wired in `.cursor/mcp.json` (see `docs/RUNPOD-MCP-SETUP.md`) for agent/interactive ops; REST client remains for scripted/CI-safe calls |
+| MCP vs REST | Dual path corrected: API MCP is self-hosted via `npx @runpod/mcp-server` (real key required; `.cursor/mcp.json` uses `${env:RUNPOD_API_KEY}` + `envFile` so nothing secret is committed); Docs MCP is the only hosted no-auth server (`docs.runpod.io/mcp`). Config is corrected, but connecting still needs Node 18+ and a key available to Cursor. REST client remains for scripted/CI-safe calls — see `docs/RUNPOD-MCP-SETUP.md` |
 | ComfyUI workflow versioning | Workflow JSON may drift with worker image updates |
 
 ---
