@@ -82,7 +82,7 @@ Persistent Network Volume `ai-film-workspace` (`f0imtkpmfh`, 150 GB, `EU-RO-1`) 
 
 ## Infra note — ComfyUI live, first clip generated
 
-ComfyUI is live on the current pod `vuejmb09xepyyr` (A100 SXM 80GB, `EU-RO-1`) — **real generated video clips are proven working for both LTX-2.3 and Wan 2.2, across all 4 characters**, as of 2026-08-02, see `docs/aidlc/INFRA.md` "Video promo pipeline" section. Full facts, root-cause/fixes, and security notes are in `docs/aidlc/INFRA.md`.
+ComfyUI ran on pod `vuejmb09xepyyr` (A100 SXM 80GB, `EU-RO-1`, currently **stopped** to control cost) — **real generated video clips are proven working for both LTX-2.3 and Wan 2.2, across all 4 characters**, as of 2026-08-02, see `docs/aidlc/INFRA.md` "Video promo pipeline" section. Full facts, root-cause/fixes, and security notes are in `docs/aidlc/INFRA.md`.
 
 A real Bolt is still needed to:
 1. Figure out why API-driven pod creation fails (immediate platform-side exit) while RunPod console creation works.

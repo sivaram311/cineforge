@@ -151,4 +151,4 @@ Orchestration: `run_promo.py` (loops the proven LTX-2.3 conversion/patch/submit 
 3. Re-verify the `enable_gqa` patch is present in `/workspace/ComfyUI/comfy/ops.py` (it's on the persistent volume, so it *should* survive — but confirm, don't assume, given how many other things silently didn't).
 4. `supervisorctl restart comfyui`, then poll `/object_info/LoadImage` until 200 before submitting any job.
 
-**Access method note:** SSH works on the current pod (rescue key `cineforge-rescue`, port mapping changes on restart — always fetch fresh via `GET /v2/pods`). Prefer SSH over Jupyter's kernel API now that Jupyter requires authentication too.
+**Access method note:** SSH works on the current pod **when it's running** (rescue key `cineforge-rescue`, port mapping changes on every restart/resume — always fetch fresh via `GET /v2/pods`; it is currently stopped, see the GPU Pods table above). Prefer SSH over Jupyter's kernel API now that Jupyter requires authentication too.
