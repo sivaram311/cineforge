@@ -130,18 +130,24 @@ The first clip's facial likeness didn't match the source photo closely enough. R
 
 **For future scenes:** apply the same `strength: 1.0` on both `LTXVImgToVideoInplace` nodes and `img_compression: 8` (or lower) by default, rather than trusting the blueprint's own stock defaults for identity-sensitive shots.
 
-### Remaining for the full 6-scene Tamil promo
+### Full 6-scene Tamil promo — DELIVERED (2026-08-02)
 
-| Item | Status |
-| --- | --- |
-| Character reference images | **Uploaded and verified**, survived multiple pod terminations (persistent volume). `/workspace/ComfyUI/input/characters/{ajith.png, akhil.jpg, mathura.jpg, siva.jpg}`. |
-| Basic image-to-video generation | **Proven working** (see above) — one character, one scene, no character-consistency layer yet. |
-| Character-consistency nodes (IPAdapter/InstantID) | Not yet installed/tested — the working test above used a plain `LoadImage` reference, not a face-preserving conditioning node. Needed if the 6 scenes must keep each character's face consistent across cuts. |
-| Multi-scene orchestration script | Not yet built — need to loop the now-proven single-scene generation across all 6 scenes with their respective character images and Tamil-context prompts. |
-| `edge-tts` (Tamil TTS) | Installed in the ComfyUI venv on the current A100 pod (also installed identically on both prior terminated pods — remember this is `/opt`-local, does not survive a pod swap, reinstall if pod changes again). |
-| `moviepy` + `ffmpeg` (stitching) | Both present/installed on the current pod. |
-| Final ffmpeg stitch + Tamil audio overlay | Not yet attempted — straightforward once all 6 scene clips exist. |
+**Status: complete.** `cineforge_promo_final.mp4` — 60.29s, h264 512×320 + AAC audio, 6 scenes × ~10s, all 4 characters, Tamil VO per scene. Scene script/prompts in `docs/aidlc/SCENES.md` (drafted by the agent — no product/brand brief existed; theme is a generic "meet the crew" identity reel reusing the already-proven visual style). Downloaded to `test_output/cineforge_promo_final.mp4` (gitignored, local only). **Verified by extracting and viewing actual frames from all 6 scenes** (not just format checks) — every scene shows real, coherent, character-matching video.
 
-**Bottom line:** the hard infrastructure problem (getting ANY real clip out of this pipeline) is solved and proven. What's left is scaling the proven single-scene approach to all 6 scenes, deciding whether character-consistency nodes are worth the added complexity, and wiring the TTS+stitch finishing step — all straightforward extensions of a working pattern now, not open unknowns.
+Orchestration: `run_promo.py` (loops the proven LTX-2.3 conversion/patch/submit pattern across all 6 scenes + generates Tamil VO via `edge-tts` per scene) and `stitch_promo.py` (mux each scene's video with its own VO padded to scene length via `ffmpeg apad`, replacing LTX's own ambient audio track, then concat all 6). Neither script is committed to the repo (scratch-path convention established earlier in this project) — recreate from this description if needed.
+
+**Character-consistency nodes (IPAdapter/InstantID):** deliberately not used. The plain `LoadImage` single-reference approach already proven for individual test clips produced correct, recognizable likeness across all 6 scenes without added complexity.
+
+**Three new bugs hit and fixed during this run, none previously seen:**
+
+1. **`enable_gqa` regression on the Gemma text-encoder path.** The manual `comfy/ops.py` patch from earlier in this session (torch 2.4.1 doesn't support the `enable_gqa` kwarg) had been dropped via `git stash drop` after confirming the `master` branch "already handles it" — but that confirmation only covered the Wan 2.2 codepath, not the LTX/Gemma text-encoder attention codepath, which crashed identically once real scene generation (not just Wan testing) resumed. **Also**: the branch's own built-in GQA handling only strips `enable_gqa` when `attn_mask is not None and not is_nvidia()` — on an NVIDIA GPU with no attn_mask, it left the kwarg untouched, then later logic still passed it straight to `torch.nn.functional.scaled_dot_product_attention`, which doesn't recognize the parameter *name* at all on torch < 2.5 (raises `TypeError: unexpected keyword argument`, regardless of value). Re-patched `comfy/ops.py`: strip `enable_gqa` via `kwargs.pop(...)` (not `kwargs["enable_gqa"] = False` — setting it to `False` still leaves the *key* present, which torch < 2.5 still rejects by name) whenever `torch.__version__ < (2, 5)`, independent of the nvidia/attn_mask branching. **Lesson: a manual compatibility patch that gets "confirmed redundant" for one codepath may still be load-bearing for a different codepath through the same shared file — verify against the actual failing call site, not just the one you were testing at the time.**
+2. **Stop/resume wipes `/opt` state every time, not just once.** This pod's own first stop→resume cycle (after the earlier Wan fix was pushed) reproduced the *exact* original fresh-pod problem: `/opt/ComfyUI` reverted to a separate, empty, non-symlinked install, and the `comfyui` venv lost `sqlalchemy`/`edge-tts`/etc. again. This is not a one-time fresh-pod quirk — it happens on **every** resume. Re-applied the same fix (symlink + `pip install -r requirements.txt` + reinstall the venv package list) — now confirmed as a standing step required after every stop/resume, not just pod creation.
+3. **Doubled output subfolder in `run_promo.py`'s path construction.** `OUT_DIR` was set to `.../output/cineforge` while `filename_prefix` (e.g. `"cineforge/scene1_siva"`) also creates a `cineforge` subfolder under ComfyUI's base output dir — real files landed at `.../output/cineforge/scene1_*.mp4`, but the manifest recorded `.../output/cineforge/cineforge/scene1_*.mp4`. Caught by verifying the files actually existed at the claimed path before handing them to the stitch step, not by trusting the script's own success log. Fixed by a one-line `sed` correction on `manifest.json` rather than re-running generation.
+
+**For next time (standing checklist after any pod stop/resume, not just first boot):**
+1. `readlink -f /opt/ComfyUI` — if not `/workspace/ComfyUI`, redo the symlink (`rm -rf /opt/ComfyUI && ln -s /workspace/ComfyUI /opt/ComfyUI`).
+2. Reinstall into the `comfyui` venv: `sqlalchemy alembic blake3 comfy-aimdo==0.4.10 comfy-kitchen==0.2.22 av simpleeval edge-tts moviepy`, plus `pip install -r /workspace/ComfyUI/requirements.txt` for the frontend/comfy-kitchen version bump `master` expects.
+3. Re-verify the `enable_gqa` patch is present in `/workspace/ComfyUI/comfy/ops.py` (it's on the persistent volume, so it *should* survive — but confirm, don't assume, given how many other things silently didn't).
+4. `supervisorctl restart comfyui`, then poll `/object_info/LoadImage` until 200 before submitting any job.
 
 **Access method note:** SSH works on the current pod (rescue key `cineforge-rescue`, port mapping changes on restart — always fetch fresh via `GET /v2/pods`). Prefer SSH over Jupyter's kernel API now that Jupyter requires authentication too.

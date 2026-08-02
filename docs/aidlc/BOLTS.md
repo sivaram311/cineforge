@@ -94,19 +94,15 @@ A real Bolt is still needed to:
 
 **Goal:** A 6-scene / 60-second promo video (4 characters, Tamil TTS voiceover) generated via ComfyUI, orchestrated by a Python script.
 
-**Status: real scenes proven working for both LTX-2.3 and Wan 2.2, across all 4 characters (2026-08-02).** See `docs/aidlc/INFRA.md` "Video promo pipeline" section for full detail, including a critical Wan 2.2 frame-content bug (pure-noise output from a `VAEDecode` wiring error) found and fixed after initial format-only verification missed it. Current pod: `vuejmb09xepyyr` (A100 SXM 80GB — GPU choice matters here, see INFRA.md's architecture-compatibility note before switching pods again).
+**Status: DONE (2026-08-02).** `cineforge_promo_final.mp4` — 60.29s, 6 scenes, all 4 characters, Tamil VO per scene, generated end-to-end and independently verified (real frames viewed, not just format checks). See `docs/aidlc/INFRA.md` "Full 6-scene Tamil promo — DELIVERED" section for full detail: orchestration approach, the character-consistency decision (plain `LoadImage` reference, no IPAdapter/InstantID needed), and three new bugs found/fixed along the way (an `enable_gqa` torch-compatibility regression, `/opt` state getting wiped on *every* pod stop/resume not just first boot, and a doubled-subfolder path bug in the orchestration script). Scene script/prompts: `docs/aidlc/SCENES.md`. Current pod: `vuejmb09xepyyr` (A100 SXM 80GB, stopped after delivery to control cost).
 
 Done:
 - Character reference images uploaded and confirmed surviving multiple pod swaps (persistent volume).
-- **LTX-2.3 and Wan 2.2 both generate real, frame-content-verified clips for all 4 characters** — real MP4, valid video(+audio for LTX) codecs, correct resolution/duration, AND actual decoded frames visually confirmed to show coherent character-matching video (not just container-level checks — see the Wan 2.2 noise-output bug below for why that distinction matters).
+- LTX-2.3 and Wan 2.2 both proven with real, frame-content-verified clips for all 4 characters (see the Wan 2.2 noise-output bug in INFRA.md for why frame-content verification, not just container checks, is now a standing rule).
 - Root-caused and fixed a whole class of workflow-conversion bugs (widget-to-input misassignment) rather than special-casing each one.
-- Root-caused and fixed a genuine `VAEDecode`-wired-to-wrong-sampler-stage bug that made every first-round Wan 2.2 clip pure noise despite passing all format checks — found by actually extracting and viewing frames, not trusting metadata.
-- `edge-tts`, `moviepy`, `ffmpeg` all installed on the current pod.
+- Character-consistency decision made: plain `LoadImage` single-reference is sufficient, no IPAdapter/InstantID needed.
+- Multi-scene loop built (`run_promo.py`) and run for all 6 scenes.
+- Tamil TTS (`edge-tts`) wired and generated per scene.
+- Final `ffmpeg` stitch (6 clips + Tamil VO overlay) wired (`stitch_promo.py`) and produces the single output file.
 
-Still needed (each should land as its own reviewable sub-step, per the original caution below — still valid advice):
-1. Decide whether character-consistency nodes (IPAdapter/InstantID) are needed, given the proven approach uses a plain `LoadImage` reference without them.
-2. Build the multi-scene loop (6 scenes × character + Tamil-context prompt) reusing the now-working single-scene generation.
-3. Wire the Tamil TTS (`edge-tts`) generation step.
-4. Wire the final `ffmpeg` stitch (6 clips + audio overlay) into one output file.
-
-**Acceptance (not yet met):** the orchestration script runs end-to-end and produces a final stitched Tamil promo video; each sub-step above should land as its own reviewable unit rather than one large unverified attempt, given how much this session's pod-creation and tooling troubleshooting cost in time — verify each layer before building the next.
+**Acceptance: met.** The orchestration scripts run end-to-end and produce a final stitched Tamil promo video, independently verified frame-by-frame, not just claimed.
