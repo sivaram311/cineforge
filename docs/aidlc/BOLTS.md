@@ -90,13 +90,22 @@ A real Bolt is still needed to:
 
 ---
 
-## Bolt 10 — Video promo pipeline (6-scene, character-driven, not started)
+## Bolt 10 — Video promo pipeline (6-scene, character-driven)
 
-**Goal:** A 6-scene / 60-second promo video (4 characters, Tamil TTS voiceover) generated via ComfyUI on pod `t3s9yfpovyi2um`, orchestrated by a Python script.
+**Goal:** A 6-scene / 60-second promo video (4 characters, Tamil TTS voiceover) generated via ComfyUI, orchestrated by a Python script.
 
-**Current status (see `docs/aidlc/INFRA.md` "Video promo pipeline" section for full detail):**
-- Character reference images: **uploaded** to `/workspace/ComfyUI/input/characters/`.
-- `ffmpeg`: present.
-- Everything else — video-generation custom nodes (IPAdapter/InstantID/AnimateDiff/Wan/LTX-Video/VideoHelperSuite), the multi-GB video model weights, a real exported API-format workflow JSON, and `edge-tts`/`moviepy` in the ComfyUI venv — **not yet in place**. This is real multi-step Construction work, not a quick follow-up.
+**Status: first real scene proven working (2026-08-02).** See `docs/aidlc/INFRA.md` "Video promo pipeline" section for full detail. Current pod: `qviysdl1bybtav` (A100 80GB — GPU choice matters here, see INFRA.md's architecture-compatibility note before switching pods again).
 
-**Acceptance (not yet met):** the orchestration script runs end-to-end against this pod and produces `1min_tamil_promo_final.mp4`; each sub-step (node install, model download, workflow authoring, TTS+ffmpeg stitch) should land as its own reviewable sub-Bolt rather than one large unverified attempt, given how much this session's pod-creation and tooling troubleshooting cost in time — verify each layer before building the next.
+Done:
+- Character reference images uploaded and confirmed surviving multiple pod swaps (persistent volume).
+- **One full scene generated end-to-end and independently verified**: real MP4, valid video+audio codecs, correct resolution/duration — not just a claimed success.
+- Root-caused and fixed a whole class of workflow-conversion bugs (widget-to-input misassignment) rather than special-casing each one.
+- `edge-tts`, `moviepy`, `ffmpeg` all installed on the current pod.
+
+Still needed (each should land as its own reviewable sub-step, per the original caution below — still valid advice):
+1. Decide whether character-consistency nodes (IPAdapter/InstantID) are needed, given the proven approach uses a plain `LoadImage` reference without them.
+2. Build the multi-scene loop (6 scenes × character + Tamil-context prompt) reusing the now-working single-scene generation.
+3. Wire the Tamil TTS (`edge-tts`) generation step.
+4. Wire the final `ffmpeg` stitch (6 clips + audio overlay) into one output file.
+
+**Acceptance (not yet met):** the orchestration script runs end-to-end and produces a final stitched Tamil promo video; each sub-step above should land as its own reviewable unit rather than one large unverified attempt, given how much this session's pod-creation and tooling troubleshooting cost in time — verify each layer before building the next.

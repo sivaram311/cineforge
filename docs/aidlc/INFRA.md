@@ -25,18 +25,28 @@ Tracks real RunPod cloud resources this project has provisioned (not code, not B
 
 ## GPU Pods
 
+**Current pod (active):**
+
 | Field | Value |
 | --- | --- |
-| Pod ID | `t3s9yfpovyi2um` |
-| Name | `mid_coffee_goldfish` |
-| GPU | RTX 4090 (~24.8 GB VRAM free at verify time) |
+| Pod ID | `qviysdl1bybtav` |
+| Name | `big_blush_ladybug` |
+| GPU | **NVIDIA A100 80GB PCIe** (~78.85 GB VRAM free at last verify) |
 | Data center | `EU-RO-1` |
-| Image | `ghcr.io/ai-dock/comfyui:latest-cuda` |
+| Image | `ghcr.io/ai-dock/comfyui:latest` |
 | Network volume | `f0imtkpmfh` mounted at `/workspace` |
-| Public IP | `213.173.99.34` |
-| ComfyUI URL | https://t3s9yfpovyi2um-8188.proxy.runpod.net/ (RunPod `proxy.runpod.net` for HTTP ports — not direct IP:port) |
-| Created via | RunPod console (manual). All prior API-driven create attempts this session failed with an immediate platform-side exit for unresolved reasons; console creation worked where the API did not. |
-| Verified | Internal (SSH) `127.0.0.1:8188/system_stats` → 200 with `comfyui_version` 0.29.2, `pytorch_version` 2.4.1+cu121, CUDA device `NVIDIA GeForce RTX 4090`. This is what the orchestration pipeline actually uses (runs inside the pod) — external browser access is separately gated, see below. |
+| SSH | Working (rescue key `cineforge-rescue`); port mapping changes on restart — always fetch fresh via `GET /v2/pods` |
+| Cost | $1.39/hr |
+| Verified | Internal (SSH) `127.0.0.1:18188/system_stats` → 200, `comfyui_version` 0.29.2, `pytorch_version` 2.4.1+cu121, CUDA device `NVIDIA A100 80GB PCIe`. **`torch.cuda.get_device_capability(0)` → `(8, 0)` (`sm_80`) — explicitly listed in this PyTorch build's supported architectures**, unlike the Blackwell pod below. |
+
+**Prior pods this session (both retired):**
+
+| Pod ID | GPU | Outcome |
+| --- | --- | --- |
+| `t3s9yfpovyi2um` | RTX 4090 (24GB, `sm_89`) | Terminated. ComfyUI ran fine, but the LTX-2.3 22B model + Gemma 12B text encoder together (~34GB+) OOM'd during actual sampling even after CPU-offloading the text encoder — genuinely doesn't fit in 24GB for this pipeline. |
+| `f4fkrclbvqm7gi` | RTX PRO 6000 Blackwell Workstation Edition (96–98GB, `sm_120`) | Terminated. Plenty of VRAM, but **`sm_120` (Blackwell) is not in this image's PyTorch 2.4.1 supported-architecture list** (`sm_50` through `sm_90` only) — every GPU op failed with `CUDA error: no kernel image is available for execution on the device`. Would need a PyTorch upgrade (2.6+/CUDA 12.4+) to use this generation of card with the stock image; not attempted. |
+
+**Lesson for future GPU choices on this image:** stick to Ampere/Ada-or-older architectures (`sm_80` A100, `sm_86`, `sm_89` RTX 4090/L40S/RTX 6000 Ada, `sm_90` H100) unless the image's PyTorch is deliberately upgraded first. Newer Blackwell-generation cards (`sm_120`, e.g. RTX PRO 6000 Blackwell, RTX 50-series) will not run any CUDA op on this stock `ghcr.io/ai-dock/comfyui` image.
 
 ### External browser access now requires portal login
 
@@ -74,18 +84,42 @@ This does **not** block the actual generation pipeline — the orchestration scr
 
 ## Video promo pipeline — status (6-scene, 60s character-driven promo)
 
-A user plan calls for a 6-scene / 60-second promo (4 characters: Mathura, Siva, Akhil, Ajith) using image-to-video generation + a Tamil TTS voiceover, orchestrated by a Python script hitting the ComfyUI API. **Verified prerequisite status as of the live check below — do not assume any of this exists without re-checking, since it changes as work lands:**
+A user plan calls for a 6-scene / 60-second promo (4 characters: Mathura, Siva, Akhil, Ajith) using image-to-video generation + a Tamil TTS voiceover, orchestrated by a Python script hitting the ComfyUI API.
+
+### First real test clip generated (2026-08-02)
+
+**Success, independently verified — not just a claimed result.** Using the `Image to Video (LTX-2.3)` blueprint (native LTX support, no extra custom nodes needed) on the A100 pod, with Siva's reference image and a simple test prompt:
+
+| Field | Value |
+| --- | --- |
+| Output | `siva_test_i2v_00001_.mp4` in `/workspace/ComfyUI/output/cineforge/` |
+| Verified via | `ls -la` (real 1,703,841-byte file) + `ffprobe` (valid ISO Media MP4, h264 512×320 video, aac audio, 26.04s) |
+| Settings used | 512×320, ~26s duration, prompt: "cinematic shot of a man standing in rain-slicked city streets at night, neon lights, moody atmosphere" |
+| Checkpoint | `ltx-2.3-22b-dev-fp8.safetensors` + `ltx-2.3-22b-distilled-lora-384.safetensors` LoRA + `gemma_3_12B_it_fp4_mixed.safetensors` text encoder + `ltx-2.3-spatial-upscaler-x2-1.1.safetensors` upscaler |
+| GPU usage | Peaked ~100% utilization, ~60.5GB VRAM (of 80GB available) |
+
+**How the workflow was built:** ComfyUI's stock blueprints (`Text to Video (LTX-2.3).json`, `Image to Video (LTX-2.3).json`, etc.) are UI-format files using ComfyUI's subgraph feature — the real node graph lives nested under `definitions.subgraphs[0]`, not the top-level `nodes`/`links` arrays (those just hold a single wrapper/reference node). A custom Python converter was written (`/workspace/convert_workflow.py` pattern, not committed to the repo — recreate if needed) that:
+1. Extracts the subgraph's real node/link list.
+2. Resolves links by their explicit `link_id` (not by re-deriving slot-index matches — more robust).
+3. Bypasses pure-passthrough `Reroute` nodes by tracing back to their true upstream origin.
+4. Fetches each node type's live `object_info` schema from the running ComfyUI server to correctly map `widgets_values` positions to named inputs.
+
+**Real bugs found in that conversion approach (not blueprint bugs — conversion-script bugs), now understood and auto-fixed:** for nodes with multiple widgets, the positional widget-to-input-name mapping sometimes misaligns (schema enumeration order ≠ actual UI widget render order), causing values to land in the wrong field. Concretely hit and fixed: `batch_size` getting a duration/fps value instead of `1`, `device` getting a filename instead of `default`, `strength_model` getting a filename instead of a float, `scale_method` getting a resolution number instead of a valid option string, `bit_depth` getting an fps value instead of a valid 8–10 range value. A generic post-conversion fixup pass now catches this whole bug class by type-checking known problem fields rather than trusting the positional mapping blindly.
+
+**Also learned:** the `Text to Video (LTX-2.3)` blueprint specifically (as opposed to `Image to Video`) has a genuine internal AV-latent shape inconsistency when run standalone outside its original larger-graph context (video_latent and audio_latent paths didn't align even with correct, consistent parameters) — not yet root-caused, worked around by switching to the `Image to Video` blueprint instead, which worked cleanly. If picking this back up, don't assume `Text to Video` is safe to use as-is.
+
+### Remaining for the full 6-scene Tamil promo
 
 | Item | Status |
 | --- | --- |
-| Character reference images | **Uploaded.** `/workspace/ComfyUI/input/characters/{ajith.png, akhil.jpg, mathura.jpg, siva.jpg}`, via Jupyter Contents API (base64 PUT, XSRF-token-authenticated — plain PUT alone returns 403 even with `WEB_ENABLE_AUTH=false`, since Jupyter's CSRF protection is separate from login auth). Sizes verified matching the local source files exactly. |
-| Custom nodes (IPAdapter / InstantID / AnimateDiff / Wan / WanVideo / LTX-Video / VideoHelperSuite) | **Absent.** Only `ComfyUI-Manager` and `ComfyUI_essentials` are installed. None of the character-consistency or video-generation node packs exist yet — must be installed before any image-to-video generation can run. |
-| Video model weights (Wan2.1/2.2, LTX-Video, AnimateDiff motion modules, IPAdapter/InstantID weights) | **Absent.** Only SD1.5 + SDXL base/refiner image checkpoints (~16GB) plus some ControlNet/VAE/upscalers are present, under `/workspace/storage/...` (symlinked into `/opt/ComfyUI/models/`). No video-generation weights exist on this pod yet. Disk is not the blocker — the 150GB `ai-film-workspace` network volume has well over 100GB free after the existing image models, comfortably enough for a video model's multi-GB weights (the `df` pool-level free-space figure seen during diagnosis reflects shared underlying storage infrastructure, not this volume's own 150GB allocation — don't read it as "hundreds of TB available to this project"). |
-| Workflow API JSON (e.g. `film_scene_api.json`) | **Does not exist.** Stock ComfyUI blueprints (Wan 2.2, LTX-2.3, Merge Videos, etc.) ship with the image but are UI templates, not an exported API-format workflow wired for this project's 6-scene pipeline. One needs to be built (normally: assemble in the ComfyUI web UI once the right nodes/models are installed, then export via Dev Mode "Save (API Format)"). |
-| `edge-tts`, `moviepy` (Python deps for the orchestration script) | **In progress** — install attempted via the ComfyUI venv (`/opt/environments/python/comfyui`); see session notes, not yet independently re-confirmed present as of this doc update. Re-check via `ls /opt/environments/python/comfyui/lib/python3.10/site-packages \| grep -iE 'edge\|moviepy'` before relying on the orchestration script. |
-| `ffmpeg` / `ffprobe` | **Present** (`/usr/bin/ffmpeg` 4.4.2, confirmed working). |
-| `micromamba` | **Not installed / not on PATH.** Do not use `micromamba run -n comfyui ...` as in some example commands — use `/opt/environments/python/comfyui/bin/python` (or `pip`) directly instead. |
+| Character reference images | **Uploaded and verified**, survived multiple pod terminations (persistent volume). `/workspace/ComfyUI/input/characters/{ajith.png, akhil.jpg, mathura.jpg, siva.jpg}`. |
+| Basic image-to-video generation | **Proven working** (see above) — one character, one scene, no character-consistency layer yet. |
+| Character-consistency nodes (IPAdapter/InstantID) | Not yet installed/tested — the working test above used a plain `LoadImage` reference, not a face-preserving conditioning node. Needed if the 6 scenes must keep each character's face consistent across cuts. |
+| Multi-scene orchestration script | Not yet built — need to loop the now-proven single-scene generation across all 6 scenes with their respective character images and Tamil-context prompts. |
+| `edge-tts` (Tamil TTS) | Installed in the ComfyUI venv on the current A100 pod (also installed identically on both prior terminated pods — remember this is `/opt`-local, does not survive a pod swap, reinstall if pod changes again). |
+| `moviepy` + `ffmpeg` (stitching) | Both present/installed on the current pod. |
+| Final ffmpeg stitch + Tamil audio overlay | Not yet attempted — straightforward once all 6 scene clips exist. |
 
-**Bottom line:** ComfyUI itself is healthy and reachable, and the character images are staged, but the actual image-to-video generation capability (nodes + models + a real workflow) does not exist on this pod yet — that's real, multi-step Construction work (installing node packs, downloading multi-GB model weights, building/exporting a working API workflow), not a quick follow-up. Do not attempt to run the orchestration script against this pod until those are in place.
+**Bottom line:** the hard infrastructure problem (getting ANY real clip out of this pipeline) is solved and proven. What's left is scaling the proven single-scene approach to all 6 scenes, deciding whether character-consistency nodes are worth the added complexity, and wiring the TTS+stitch finishing step — all straightforward extensions of a working pattern now, not open unknowns.
 
-**Access method note (for whoever picks this up next):** SSH now works (rescue key, see Known issues above — fetch the current port mapping fresh each time). Jupyter's kernel API now requires authentication too (portal login or basic auth), so it's no longer the frictionless unauthenticated path it was earlier this session. Prefer SSH for shell access going forward. Earlier diagnosis/fixes went through the unauthenticated Jupyter kernel API on port 8888, either via a proper client library (recommended; a hand-rolled raw WebSocket client is easy to get subtly wrong around multi-frame message reassembly, which cost real time) or via `cursor-agent`, which has reliably driven this pod through both access methods.
+**Access method note:** SSH works on the current pod (rescue key `cineforge-rescue`, port mapping changes on restart — always fetch fresh via `GET /v2/pods`). Prefer SSH over Jupyter's kernel API now that Jupyter requires authentication too.
