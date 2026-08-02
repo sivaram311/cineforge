@@ -86,7 +86,18 @@ This does **not** block the actual generation pipeline — the orchestration scr
 
 A user plan calls for a 6-scene / 60-second promo (4 characters: Mathura, Siva, Akhil, Ajith) using image-to-video generation + a Tamil TTS voiceover, orchestrated by a Python script hitting the ComfyUI API.
 
-### First real test clip generated (2026-08-02)
+### Wan 2.2 pipeline also proven — all 4 characters (2026-08-02, second pod)
+
+**Two model families now both work on this project's pod setup.** After the LTX-2.3 milestone below, also installed and proved **Wan 2.2** (dual-expert high/low-noise 14B architecture) on a fresh A100-SXM pod (`vuejmb09xepyyr`), and generated **one real clip per character** — all 4 independently verified (real files, correct h264/512x320, ~3s each, no audio track — Wan 2.2 is video-only, unlike LTX's audio+video pipeline).
+
+**Setup notes for next time:**
+- This pod's `/opt/ComfyUI` was a **separate, non-symlinked, outdated (2024-09-05) install** by default — none of the persistent-volume fixes or models were visible to it until manually replaced with a symlink to `/workspace/ComfyUI`. Always check `readlink -f /opt/ComfyUI` on a new pod before assuming the established symlink pattern holds.
+- `/workspace/ComfyUI` needed a `git checkout master && git pull` to get native `WanImageToVideo` support (the pinned `v0.29.2` tag doesn't have it), plus `pip install -r requirements.txt` for the newer frontend/comfy-kitchen packages that revision expects.
+- Wan model files (`Comfy-Org/Wan_2.2_ComfyUI_Repackaged` on HuggingFace): `umt5_xxl_fp8_e4m3fn_scaled.safetensors` (text encoder), `wan_2.1_vae.safetensors` (VAE), `wan2.2_i2v_{high,low}_noise_14B_fp8_scaled.safetensors` (dual UNETs, ~14GB each), `wan2.2_i2v_lightx2v_4steps_lora_v1_{high,low}_noise.safetensors` (4-step distilled LoRAs) — ~34GB total, all confirmed by exact byte size, not assumed.
+- The `Image to Video (Wan 2.2)` blueprint conversion hit several new instances of the same widget-misassignment bug class (this time: `CLIPLoader`'s `type`/`device` fields, `UNETLoader`'s `weight_dtype`, `WanImageToVideo`'s `batch_size`/`clip_vision_output` both getting a stray `640`), plus one genuine bug in the conversion script itself (the two-stage `KSamplerAdvanced` handoff was wired backwards — fixed by confirming each node's real output slot via `object_info` rather than guessing).
+- **RunPod stop/resume lesson learned the hard way:** stopping (not terminating) a pod can fail to resume if the physical host's GPU gets reallocated — hit this on the first A100 pod, had to terminate and create a fresh one. Network volume survives regardless; only the pod itself is at risk.
+
+### First real test clip generated (2026-08-02, LTX-2.3)
 
 **Success, independently verified — not just a claimed result.** Using the `Image to Video (LTX-2.3)` blueprint (native LTX support, no extra custom nodes needed) on the A100 pod, with Siva's reference image and a simple test prompt:
 
