@@ -78,11 +78,11 @@ Evidence expectations: unit tests where noted; for paid RunPod calls, manual smo
 
 ## Infra note — Network volume provisioned
 
-Persistent Network Volume `ai-film-workspace` (`f0imtkpmfh`, 150 GB, `EU-RO-1`) now exists — see `docs/aidlc/INFRA.md`. Now attached to pod `t3s9yfpovyi2um` at `/workspace`.
+Persistent Network Volume `ai-film-workspace` (`f0imtkpmfh`, 150 GB, `EU-RO-1`) now exists — see `docs/aidlc/INFRA.md`. Currently attached to pod `qviysdl1bybtav` (A100) at `/workspace` — the pod itself has been swapped twice (`t3s9yfpovyi2um` RTX 4090, then `f4fkrclbvqm7gi` RTX PRO 6000 Blackwell, both terminated), the volume survives each swap.
 
-## Infra note — ComfyUI live on manually-created pod
+## Infra note — ComfyUI live, first clip generated
 
-ComfyUI is live on pod `t3s9yfpovyi2um` (`mid_coffee_goldfish`, RTX 4090, `EU-RO-1`, image `ghcr.io/ai-dock/comfyui:latest-cuda`) — access via https://t3s9yfpovyi2um-8188.proxy.runpod.net/. Full facts, root-cause/fix, and security notes are in `docs/aidlc/INFRA.md`.
+ComfyUI is live on the current pod `qviysdl1bybtav` (A100 80GB, `EU-RO-1`) — a **real generated video clip is proven working** as of 2026-08-02, see `docs/aidlc/INFRA.md` "Video promo pipeline" section. Full facts, root-cause/fixes, and security notes are in `docs/aidlc/INFRA.md`.
 
 A real Bolt is still needed to:
 1. Figure out why API-driven pod creation fails (immediate platform-side exit) while RunPod console creation works.

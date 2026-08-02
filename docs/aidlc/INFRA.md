@@ -12,7 +12,7 @@ Tracks real RunPod cloud resources this project has provisioned (not code, not B
 | Name | `ai-film-workspace` |
 | Size | 150 GB |
 | Data center | `EU-RO-1` |
-| Attached to Pod | `t3s9yfpovyi2um` (`mid_coffee_goldfish`) at `/workspace` |
+| Attached to Pod (current) | `qviysdl1bybtav` (`big_blush_ladybug`, A100) at `/workspace` — previously `t3s9yfpovyi2um` (RTX 4090, terminated) and `f4fkrclbvqm7gi` (RTX PRO 6000 Blackwell, terminated), same volume reattached each time |
 | Created via | RunPod REST API — `POST https://rest.runpod.io/v1/networkvolumes` |
 | Auth | Project `RUNPOD_API_KEY` (value never stored in docs) |
 | Verified | Independently confirmed via `GET /v1/networkvolumes/f0imtkpmfh` (matching fields) |
