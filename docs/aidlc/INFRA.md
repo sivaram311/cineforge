@@ -25,7 +25,7 @@ Tracks real RunPod cloud resources this project has provisioned (not code, not B
 
 ## GPU Pods
 
-**Current pod (active):**
+**Current pod (stopped, not billing):**
 
 | Field | Value |
 | --- | --- |
@@ -35,9 +35,10 @@ Tracks real RunPod cloud resources this project has provisioned (not code, not B
 | Data center | `EU-RO-1` |
 | Image | `ghcr.io/ai-dock/comfyui:latest` |
 | Network volume | `f0imtkpmfh` mounted at `/workspace` |
-| SSH | Working (rescue key `cineforge-rescue`); port mapping changes on restart — always fetch fresh via `GET /v2/pods` |
-| Cost | $1.49/hr |
+| SSH | Working when running (rescue key `cineforge-rescue`); port mapping changes on every resume — always fetch fresh via `GET /v2/pods` |
+| Cost | $1.49/hr while running — currently **stopped** (`desiredStatus: EXITED`, stopped 2026-08-02 after the 6-scene promo delivery to control cost), not billing |
 | Verified | Internal (SSH) `127.0.0.1:18188/system_stats` → 200, `comfyui_version` 0.29.0, `pytorch_version` 2.4.1+cu121, CUDA device `NVIDIA A100-SXM4-80GB`. `torch.cuda.get_device_capability(0)` → `(8, 0)` (`sm_80`) — explicitly supported by this PyTorch build, unlike the Blackwell pod below. |
+| Resuming | Every stop/resume on this pod has wiped `/opt` state (symlink + venv packages) — see "Full 6-scene Tamil promo" section below for the standing post-resume checklist before submitting any job. |
 
 **Prior pods this session (all retired):**
 
