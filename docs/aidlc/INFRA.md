@@ -108,6 +108,14 @@ A user plan calls for a 6-scene / 60-second promo (4 characters: Mathura, Siva, 
 
 **Also learned:** the `Text to Video (LTX-2.3)` blueprint specifically (as opposed to `Image to Video`) has a genuine internal AV-latent shape inconsistency when run standalone outside its original larger-graph context (video_latent and audio_latent paths didn't align even with correct, consistent parameters) — not yet root-caused, worked around by switching to the `Image to Video` blueprint instead, which worked cleanly. If picking this back up, don't assume `Text to Video` is safe to use as-is.
 
+### Face-fidelity fix (2026-08-02, second generation)
+
+The first clip's facial likeness didn't match the source photo closely enough. Root cause: the blueprint uses a **two-pass** pipeline (a base-resolution pass, then an upscale/refine pass), and the two `LTXVImgToVideoInplace` conditioning nodes had **mismatched strength** — the base pass was `strength: 0.7` while the refine pass was `strength: 1.0`. Since the refine pass builds on whatever the base pass already produced, a weaker base-pass anchor meant the identity had already drifted before refinement ever saw it — the higher refine-pass strength couldn't recover detail that was never there.
+
+**Fix applied:** raised the base-pass (`LTXVImgToVideoInplace`, node id varies by blueprint — the one feeding the *non-upscaled* `EmptyLTXVLatentVideo` path) `strength` from `0.7` to `1.0` to match the refine pass, and reduced `LTXVPreprocess.img_compression` from `18` to `8` (less lossy compression of the source image before it enters the pipeline, preserving more facial detail). Regenerated `siva_test_i2v_00002_.mp4` (1,876,953 bytes, same valid h264+aac/512×320/26s format) — independently verified via `ffprobe`, not just claimed.
+
+**For future scenes:** apply the same `strength: 1.0` on both `LTXVImgToVideoInplace` nodes and `img_compression: 8` (or lower) by default, rather than trusting the blueprint's own stock defaults for identity-sensitive shots.
+
 ### Remaining for the full 6-scene Tamil promo
 
 | Item | Status |
