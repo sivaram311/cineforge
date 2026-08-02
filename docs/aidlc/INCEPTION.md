@@ -119,6 +119,7 @@ Inception does **not** resolve this. Construction Bolts that add network-facing 
 - Root `.env.example` holds placeholder names only (`RUNPOD_API_KEY=`)
 - `.gitignore` must exclude `.env`
 - RunPod API MCP is local `npx @runpod/mcp-server` (needs `RUNPOD_API_KEY` in client env / `.env` — never commit the literal key); Docs MCP at `https://docs.runpod.io/mcp` is hosted read-only with no auth. Direct REST also needs keys via env. See `docs/RUNPOD-MCP-SETUP.md`
+- `XAI_API_KEY` (xAI/Grok — image and video generation + understanding) added 2026-08-02, same handling: `.env` only (gitignored), placeholder-only in `.env.example`, never committed. **Not yet wired into any code path** — the key is available for a future provider integration, no `cineforge` code calls xAI yet.
 
 ---
 
