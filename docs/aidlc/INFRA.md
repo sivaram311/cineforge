@@ -38,7 +38,7 @@ Tracks real RunPod cloud resources this project has provisioned (not code, not B
 | SSH | Working when running (rescue key `cineforge-rescue`); port mapping changes on every resume — always fetch fresh via `GET /v2/pods` |
 | Cost | $1.49/hr while running — currently **stopped** (`desiredStatus: EXITED`, stopped 2026-08-02 after the 6-scene promo delivery to control cost), not billing |
 | Verified | Internal (SSH) `127.0.0.1:18188/system_stats` → 200, `comfyui_version` 0.29.0, `pytorch_version` 2.4.1+cu121, CUDA device `NVIDIA A100-SXM4-80GB`. `torch.cuda.get_device_capability(0)` → `(8, 0)` (`sm_80`) — explicitly supported by this PyTorch build, unlike the Blackwell pod below. |
-| Resuming | Every stop/resume on this pod has wiped `/opt` state (symlink + venv packages) — see "Full 6-scene Tamil promo" section below for the standing post-resume checklist before submitting any job. |
+| Resuming | **Stopped, not terminated** — pod and container disk still exist, not just the network volume; a plain resume (not a recreate) is expected to work. Every stop/resume on this pod so far has wiped `/opt` state (symlink + venv packages) — see "Full 6-scene Tamil promo" section below for the standing post-resume checklist before submitting any job. Deliberately left stopped-not-terminated after the 6-scene delivery so a future session can resume without redoing pod creation, at the cost of needing the `/opt` fixup again. |
 
 **Prior pods this session (all retired):**
 
