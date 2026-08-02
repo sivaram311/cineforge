@@ -80,7 +80,7 @@ Evidence expectations: unit tests where noted; for paid RunPod calls, manual smo
 
 Persistent Network Volume `ai-film-workspace` (`f0imtkpmfh`, 150 GB, `EU-RO-1`) now exists — see `docs/aidlc/INFRA.md`. Currently attached to pod `vuejmb09xepyyr` (A100 SXM) at `/workspace` — the pod itself has been swapped 3 times (`t3s9yfpovyi2um` RTX 4090, `f4fkrclbvqm7gi` RTX PRO 6000 Blackwell, `qviysdl1bybtav` A100 PCIe — all terminated), the volume survives each swap.
 
-## Infra note — ComfyUI live, first clip generated
+## Infra note — ComfyUI proven working, full promo delivered (pod now stopped)
 
 ComfyUI ran on pod `vuejmb09xepyyr` (A100 SXM 80GB, `EU-RO-1`, currently **stopped** to control cost) — **real generated video clips are proven working for both LTX-2.3 and Wan 2.2, across all 4 characters**, as of 2026-08-02, see `docs/aidlc/INFRA.md` "Video promo pipeline" section. Full facts, root-cause/fixes, and security notes are in `docs/aidlc/INFRA.md`.
 
