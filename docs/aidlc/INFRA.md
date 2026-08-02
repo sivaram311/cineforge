@@ -12,7 +12,7 @@ Tracks real RunPod cloud resources this project has provisioned (not code, not B
 | Name | `ai-film-workspace` |
 | Size | 150 GB |
 | Data center | `EU-RO-1` |
-| Attached to Pod (current) | `vuejmb09xepyyr` (`cineforge-comfyui-a100sxm`, A100 SXM) at `/workspace` — previously `t3s9yfpovyi2um` (RTX 4090), `f4fkrclbvqm7gi` (RTX PRO 6000 Blackwell), and `qviysdl1bybtav` (A100 PCIe), all terminated, same volume reattached each time |
+| Attached to Pod (current) | `u1g5ulbsam9uwo` (`cineforge-comfyui-a100sxm-2`, A100 SXM) at `/workspace` — previously `t3s9yfpovyi2um` (RTX 4090), `f4fkrclbvqm7gi` (RTX PRO 6000 Blackwell), `qviysdl1bybtav` (A100 PCIe), and `vuejmb09xepyyr` (A100 SXM), all terminated, same volume reattached each time |
 | Created via | RunPod REST API — `POST https://rest.runpod.io/v1/networkvolumes` |
 | Auth | Project `RUNPOD_API_KEY` (value never stored in docs) |
 | Verified | Independently confirmed via `GET /v1/networkvolumes/f0imtkpmfh` (matching fields) |
@@ -29,16 +29,16 @@ Tracks real RunPod cloud resources this project has provisioned (not code, not B
 
 | Field | Value |
 | --- | --- |
-| Pod ID | `vuejmb09xepyyr` |
-| Name | `cineforge-comfyui-a100sxm` |
-| GPU | **NVIDIA A100-SXM4-80GB** (~78.85 GB VRAM free at last verify) |
+| Pod ID | `u1g5ulbsam9uwo` |
+| Name | `cineforge-comfyui-a100sxm-2` |
+| GPU | **NVIDIA A100-SXM4-80GB** |
 | Data center | `EU-RO-1` |
 | Image | `ghcr.io/ai-dock/comfyui:latest` |
 | Network volume | `f0imtkpmfh` mounted at `/workspace` |
 | SSH | Working when running (rescue key `cineforge-rescue`); port mapping changes on every resume — always fetch fresh via `GET /v2/pods` |
-| Cost | $1.49/hr while running — currently **stopped** (`desiredStatus: EXITED`, stopped 2026-08-02 after the 6-scene promo delivery to control cost), not billing |
-| Verified | Internal (SSH) `127.0.0.1:18188/system_stats` → 200, `comfyui_version` 0.29.0, `pytorch_version` 2.4.1+cu121, CUDA device `NVIDIA A100-SXM4-80GB`. `torch.cuda.get_device_capability(0)` → `(8, 0)` (`sm_80`) — explicitly supported by this PyTorch build, unlike the Blackwell pod below. |
-| Resuming | **Stopped, not terminated** — pod and container disk still exist, not just the network volume; a plain resume (not a recreate) is expected to work. Every stop/resume on this pod so far has wiped `/opt` state (symlink + venv packages) — see "Full 6-scene Tamil promo" section below for the standing post-resume checklist before submitting any job. Deliberately left stopped-not-terminated after the 6-scene delivery so a future session can resume without redoing pod creation, at the cost of needing the `/opt` fixup again. |
+| Cost | $1.49/hr while running — currently **stopped** (`desiredStatus: EXITED`, stopped 2026-08-02 right after a one-scene Wan 2.2 fix reconfirmation), not billing |
+| Verified | Internal (SSH) `127.0.0.1:18188/object_info/LoadImage` → 200 after the standard post-creation fixup; Wan 2.2 pipeline resubmitted and re-verified by extracting real frames (see "Wan 2.2 fix reconfirmed on a fresh pod" below). |
+| Resuming | Created to replace `vuejmb09xepyyr` after its resume failed (see that pod's row below) — same "not enough free GPUs on the host machine" failure mode hit a second time, on a different pod. Every stop/resume on pods in this project has wiped `/opt` state (symlink + venv packages) — see "Full 6-scene Tamil promo" section below for the standing post-resume checklist before submitting any job. |
 
 **Prior pods this session (all retired):**
 
@@ -46,7 +46,10 @@ Tracks real RunPod cloud resources this project has provisioned (not code, not B
 | --- | --- | --- |
 | `t3s9yfpovyi2um` | RTX 4090 (24GB, `sm_89`) | Terminated. ComfyUI ran fine, but the LTX-2.3 22B model + Gemma 12B text encoder together (~34GB+) OOM'd during actual sampling even after CPU-offloading the text encoder — genuinely doesn't fit in 24GB for this pipeline. |
 | `f4fkrclbvqm7gi` | RTX PRO 6000 Blackwell Workstation Edition (96–98GB, `sm_120`) | Terminated. Plenty of VRAM, but **`sm_120` (Blackwell) is not in this image's PyTorch 2.4.1 supported-architecture list** (`sm_50` through `sm_90` only) — every GPU op failed with `CUDA error: no kernel image is available for execution on the device`. Would need a PyTorch upgrade (2.6+/CUDA 12.4+) to use this generation of card with the stock image; not attempted. |
-| `qviysdl1bybtav` | A100 80GB PCIe (`sm_80`) | Terminated. Fully worked (this is where the first LTX-2.3 and face-fidelity-fix clips were generated) — stopped for cost control between sessions, but **failed to resume**: `GraphQL podResume` returned "not enough free GPUs on the host machine to start this pod" (the physical host's A100 had been reallocated elsewhere while stopped). Terminated and recreated as `vuejmb09xepyyr` (A100 SXM variant, different capacity pool) since plain PCIe A100 had no capacity at recreate time either. **Lesson:** RunPod's "stop" (vs "terminate") only reliably resumes if the same physical host still has the GPU free — not guaranteed, especially after a gap. |
+| `qviysdl1bybtav` | A100 80GB PCIe (`sm_80`) | Terminated. Fully worked (this is where the first LTX-2.3 and face-fidelity-fix clips were generated) — stopped for cost control between sessions, but **failed to resume**: `GraphQL podResume` returned "not enough free GPUs on the host machine to start this pod" (the physical host's A100 had been reallocated elsewhere while stopped). Terminated and recreated as `vuejmb09xepyyr` (A100 SXM variant, different capacity pool) since plain PCIe A100 had no capacity at recreate time either. |
+| `vuejmb09xepyyr` | A100-SXM4-80GB (`sm_80`) | Terminated. This is where the Wan 2.2 noise bug was found/fixed and the 6-scene Tamil promo was generated. Stopped for cost control after delivery — **failed to resume a second time**, identical error ("not enough free GPUs on the host machine"), confirming this is a recurring RunPod behavior for this project, not a one-off. Terminated and recreated as `u1g5ulbsam9uwo`. |
+
+**Lesson (now confirmed twice, two different pods):** RunPod's "stop" (vs "terminate") only reliably resumes if the same physical host still has the GPU free — not guaranteed, especially after a gap, and this project has hit it on both A100 pods it has stopped so far. Budget for a terminate+recreate cycle (~5-10 min: new pod creation + `/opt` fixup) any time a stopped pod needs to be resumed, rather than assuming a plain resume will work.
 
 **Lesson for future GPU choices on this image:** stick to Ampere/Ada-or-older architectures (`sm_80` A100, `sm_86`, `sm_89` RTX 4090/L40S/RTX 6000 Ada, `sm_90` H100) unless the image's PyTorch is deliberately upgraded first. Newer Blackwell-generation cards (`sm_120`, e.g. RTX PRO 6000 Blackwell, RTX 50-series) will not run any CUDA op on this stock `ghcr.io/ai-dock/comfyui` image.
 
@@ -100,6 +103,10 @@ A user plan calls for a 6-scene / 60-second promo (4 characters: Mathura, Siva, 
 - Wan model files (`Comfy-Org/Wan_2.2_ComfyUI_Repackaged` on HuggingFace): `umt5_xxl_fp8_e4m3fn_scaled.safetensors` (text encoder), `wan_2.1_vae.safetensors` (VAE), `wan2.2_i2v_{high,low}_noise_14B_fp8_scaled.safetensors` (dual UNETs, ~14GB each), `wan2.2_i2v_lightx2v_4steps_lora_v1_{high,low}_noise.safetensors` (4-step distilled LoRAs) — ~34GB total, all confirmed by exact byte size, not assumed.
 - The `Image to Video (Wan 2.2)` blueprint conversion hit several new instances of the same widget-misassignment bug class (this time: `CLIPLoader`'s `type`/`device` fields, `UNETLoader`'s `weight_dtype`, `WanImageToVideo`'s `batch_size`/`clip_vision_output` both getting a stray `640`), the two-stage `KSamplerAdvanced` handoff needing full respecification (fixed by confirming each node's real output slot via `object_info` rather than guessing), and the `VAEDecode`-points-at-wrong-stage bug described above (the actual root cause of the noise output, found last because it silently produced a valid-looking file rather than an error).
 - **RunPod stop/resume lesson learned the hard way:** stopping (not terminating) a pod can fail to resume if the physical host's GPU gets reallocated — hit this on the first A100 pod, had to terminate and create a fresh one. Network volume survives regardless; only the pod itself is at risk.
+
+### Wan 2.2 fix reconfirmed on a fresh pod (2026-08-02, third pod)
+
+Operator asked for the already-shipped `VAEDecode` fix (see "CRITICAL bug found and fixed" above) to be re-verified live rather than taken on faith. Resuming the stopped `vuejmb09xepyyr` failed with the same "not enough free GPUs on the host machine" error hit previously on a different pod — terminated it and created `u1g5ulbsam9uwo` (same A100-SXM spec, same network volume, `EU-RO-1`). Ran the full standing post-creation checklist (symlink fix, venv package reinstall, confirmed the `enable_gqa` patch in `comfy/ops.py` had survived on the persistent volume), then resubmitted the Wan 2.2 script unmodified. Log confirmed the fix is active (`Fixed VAEDecode 87.samples: ['85', 0] -> [86, 0]`); the resulting clip was downloaded and frame-extracted again — real, coherent video (Siva's face, then a night street scene), not noise. Pod stopped immediately after to control cost. This is now the second independent confirmation of the same fix, on two different pods, several hours apart.
 
 ### First real test clip generated (2026-08-02, LTX-2.3)
 

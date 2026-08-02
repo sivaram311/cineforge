@@ -78,11 +78,11 @@ Evidence expectations: unit tests where noted; for paid RunPod calls, manual smo
 
 ## Infra note — Network volume provisioned
 
-Persistent Network Volume `ai-film-workspace` (`f0imtkpmfh`, 150 GB, `EU-RO-1`) now exists — see `docs/aidlc/INFRA.md`. Currently attached to pod `vuejmb09xepyyr` (A100 SXM) at `/workspace` — the pod itself has been swapped 3 times (`t3s9yfpovyi2um` RTX 4090, `f4fkrclbvqm7gi` RTX PRO 6000 Blackwell, `qviysdl1bybtav` A100 PCIe — all terminated), the volume survives each swap.
+Persistent Network Volume `ai-film-workspace` (`f0imtkpmfh`, 150 GB, `EU-RO-1`) now exists — see `docs/aidlc/INFRA.md`. Currently attached to pod `u1g5ulbsam9uwo` (A100 SXM) at `/workspace` — the pod itself has been swapped 4 times (`t3s9yfpovyi2um` RTX 4090, `f4fkrclbvqm7gi` RTX PRO 6000 Blackwell, `qviysdl1bybtav` A100 PCIe, `vuejmb09xepyyr` A100 SXM — all terminated), the volume survives each swap.
 
 ## Infra note — ComfyUI proven working, full promo delivered (pod now stopped)
 
-ComfyUI ran on pod `vuejmb09xepyyr` (A100 SXM 80GB, `EU-RO-1`, currently **stopped** to control cost) — **real generated video clips are proven working for both LTX-2.3 and Wan 2.2, across all 4 characters**, as of 2026-08-02, see `docs/aidlc/INFRA.md` "Video promo pipeline" section. Full facts, root-cause/fixes, and security notes are in `docs/aidlc/INFRA.md`.
+ComfyUI ran on pod `u1g5ulbsam9uwo` (A100 SXM 80GB, `EU-RO-1`, currently **stopped** to control cost — replaces the terminated `vuejmb09xepyyr`, whose resume failed the same way `qviysdl1bybtav`'s did) — **real generated video clips are proven working for both LTX-2.3 and Wan 2.2, across all 4 characters**, as of 2026-08-02, see `docs/aidlc/INFRA.md` "Video promo pipeline" section. Full facts, root-cause/fixes, and security notes are in `docs/aidlc/INFRA.md`.
 
 A real Bolt is still needed to:
 1. Figure out why API-driven pod creation fails (immediate platform-side exit) while RunPod console creation works.
@@ -94,7 +94,7 @@ A real Bolt is still needed to:
 
 **Goal:** A 6-scene / 60-second promo video (4 characters, Tamil TTS voiceover) generated via ComfyUI, orchestrated by a Python script.
 
-**Status: DONE (2026-08-02).** `cineforge_promo_final.mp4` — 60.29s, 6 scenes, all 4 characters, Tamil VO per scene, generated end-to-end and independently verified (real frames viewed, not just format checks). See `docs/aidlc/INFRA.md` "Full 6-scene Tamil promo — DELIVERED" section for full detail: orchestration approach, the character-consistency decision (plain `LoadImage` reference, no IPAdapter/InstantID needed), and three new bugs found/fixed along the way (an `enable_gqa` torch-compatibility regression, `/opt` state getting wiped on *every* pod stop/resume not just first boot, and a doubled-subfolder path bug in the orchestration script). Scene script/prompts: `docs/aidlc/SCENES.md`. Current pod: `vuejmb09xepyyr` (A100 SXM 80GB, stopped after delivery to control cost).
+**Status: DONE (2026-08-02).** `cineforge_promo_final.mp4` — 60.29s, 6 scenes, all 4 characters, Tamil VO per scene, generated end-to-end and independently verified (real frames viewed, not just format checks). See `docs/aidlc/INFRA.md` "Full 6-scene Tamil promo — DELIVERED" section for full detail: orchestration approach, the character-consistency decision (plain `LoadImage` reference, no IPAdapter/InstantID needed), and three new bugs found/fixed along the way (an `enable_gqa` torch-compatibility regression, `/opt` state getting wiped on *every* pod stop/resume not just first boot, and a doubled-subfolder path bug in the orchestration script). Scene script/prompts: `docs/aidlc/SCENES.md`. Current pod: `u1g5ulbsam9uwo` (A100 SXM 80GB, stopped to control cost). The `VAEDecode` fix was independently reconfirmed live on this fresh pod after the original pod's resume failed — see `docs/aidlc/INFRA.md` "Wan 2.2 fix reconfirmed on a fresh pod".
 
 Done:
 - Character reference images uploaded and confirmed surviving multiple pod swaps (persistent volume).
