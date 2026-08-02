@@ -1,13 +1,16 @@
-# cineforge — 6-Scene Promo Script (draft)
+# cineforge — 6-Scene Promo Script
 
-**Status:** Draft, authored by the agent in the absence of a specific creative
-brief (no product/brand/message was given). Theme chosen: a cinematic
-"meet the crew" identity reel featuring all 4 characters, urban night
-aesthetic — reuses the exact visual style already proven working in the
-LTX-2.3 and Wan 2.2 pipelines (rain-slicked city streets, neon lights,
-moody atmosphere), to minimize the risk of spending pod time on an
-untested look. **Editable** — swap any scene's prompt or VO line before
-the final render if this isn't the intended direction.
+**Status: DELIVERED (2026-08-02).** This script was rendered — see
+`cineforge_promo_final.mp4` (60.29s, verified frame-by-frame) and
+`docs/aidlc/INFRA.md`'s "Full 6-scene Tamil promo — DELIVERED" section and
+`docs/aidlc/BOLTS.md` Bolt 10. Authored by the agent in the absence of a
+specific creative brief (no product/brand/message was given). Theme chosen:
+a cinematic "meet the crew" identity reel featuring all 4 characters, urban
+night aesthetic — reuses the exact visual style already proven working in
+the LTX-2.3 and Wan 2.2 pipelines (rain-slicked city streets, neon lights,
+moody atmosphere), to minimize the risk of spending pod time on an untested
+look. **Still editable** for a future re-render if this isn't the intended
+direction — nothing below is locked in beyond what was actually generated.
 
 Total target length: **~60s** across 6 scenes (~10s each). Generation
 approach: proven single-reference `LoadImage` → LTX-2.3 image-to-video
@@ -24,23 +27,26 @@ now would be new untested surface area for a fixed-scope deliverable.
 | 5 | Siva + callback | Cinematic wide shot of the same street from scene 1, now busier, warmer lighting, forward motion | இது வெறும் ஆரம்பம் தான் |
 | 6 | Mathura (closing) | Cinematic final shot, turning toward camera, confident smile, city lights bokeh background, logo-card-ready empty space at bottom | நன்றி - இதுவே நம் கதை |
 
-## Orchestration plan
+## Orchestration plan (as executed)
 
-1. Reuse the proven per-scene generation pattern (`wan_convert_patch_submit.py` /
-   the LTX equivalent) — parameterize character image, prompt, and output
-   filename per scene, loop over the table above in one pod session.
-2. Generate all 6 clips using **LTX-2.3** (not Wan 2.2) for the final
+1. Reused the proven per-scene generation pattern (`run_promo.py`, built on
+   the LTX conversion/patch/submit approach) — parameterized character
+   image, prompt, and output filename per scene, looped over the table
+   above in one pod session.
+2. Generated all 6 clips using **LTX-2.3** (not Wan 2.2) for the final
    deliverable: LTX produces audio+video jointly and already has a
    face-fidelity fix applied (`strength: 1.0`, `img_compression: 8`) — Wan
-   2.2 remains proven-working as a secondary option but LTX is the more
+   2.2 remains proven-working as a secondary option but LTX was the more
    mature path for this deliverable.
-3. Generate 6 Tamil VO lines via `edge-tts` (already installed on the pod).
-4. Stitch: 6 video clips concatenated in order + VO lines overlaid/timed
-   per scene, via `ffmpeg` (already installed on the pod) → single output
-   MP4.
-5. Download final stitched file, verify **actual frame content** (not just
-   format) before declaring success — this is now a standing rule after
-   the Wan 2.2 noise-output bug (see `INFRA.md`).
+3. Generated 6 Tamil VO lines via `edge-tts` (`run_promo.py`).
+4. Stitched: 6 video clips + VO lines overlaid/timed per scene (VO padded
+   to each scene's length, replacing LTX's own ambient audio track), via
+   `ffmpeg` (`stitch_promo.py`) → single output MP4.
+5. Downloaded the final stitched file and **verified actual frame content**
+   (not just format) by extracting and viewing frames from all 6 scenes
+   before declaring success — the standing rule established after the Wan
+   2.2 noise-output bug (see `INFRA.md`). All 6 scenes confirmed real,
+   coherent, character-matching video.
 
 ## Open items / assumptions made without confirmation
 
