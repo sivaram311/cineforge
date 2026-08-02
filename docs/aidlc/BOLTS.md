@@ -78,11 +78,11 @@ Evidence expectations: unit tests where noted; for paid RunPod calls, manual smo
 
 ## Infra note — Network volume provisioned
 
-Persistent Network Volume `ai-film-workspace` (`f0imtkpmfh`, 150 GB, `EU-RO-1`) now exists — see `docs/aidlc/INFRA.md`. Currently attached to pod `qviysdl1bybtav` (A100) at `/workspace` — the pod itself has been swapped twice (`t3s9yfpovyi2um` RTX 4090, then `f4fkrclbvqm7gi` RTX PRO 6000 Blackwell, both terminated), the volume survives each swap.
+Persistent Network Volume `ai-film-workspace` (`f0imtkpmfh`, 150 GB, `EU-RO-1`) now exists — see `docs/aidlc/INFRA.md`. Currently attached to pod `vuejmb09xepyyr` (A100 SXM) at `/workspace` — the pod itself has been swapped 3 times (`t3s9yfpovyi2um` RTX 4090, `f4fkrclbvqm7gi` RTX PRO 6000 Blackwell, `qviysdl1bybtav` A100 PCIe — all terminated), the volume survives each swap.
 
 ## Infra note — ComfyUI live, first clip generated
 
-ComfyUI is live on the current pod `qviysdl1bybtav` (A100 80GB, `EU-RO-1`) — a **real generated video clip is proven working** as of 2026-08-02, see `docs/aidlc/INFRA.md` "Video promo pipeline" section. Full facts, root-cause/fixes, and security notes are in `docs/aidlc/INFRA.md`.
+ComfyUI is live on the current pod `vuejmb09xepyyr` (A100 SXM 80GB, `EU-RO-1`) — **real generated video clips are proven working for both LTX-2.3 and Wan 2.2, across all 4 characters**, as of 2026-08-02, see `docs/aidlc/INFRA.md` "Video promo pipeline" section. Full facts, root-cause/fixes, and security notes are in `docs/aidlc/INFRA.md`.
 
 A real Bolt is still needed to:
 1. Figure out why API-driven pod creation fails (immediate platform-side exit) while RunPod console creation works.
@@ -94,12 +94,13 @@ A real Bolt is still needed to:
 
 **Goal:** A 6-scene / 60-second promo video (4 characters, Tamil TTS voiceover) generated via ComfyUI, orchestrated by a Python script.
 
-**Status: first real scene proven working (2026-08-02).** See `docs/aidlc/INFRA.md` "Video promo pipeline" section for full detail. Current pod: `qviysdl1bybtav` (A100 80GB — GPU choice matters here, see INFRA.md's architecture-compatibility note before switching pods again).
+**Status: real scenes proven working for both LTX-2.3 and Wan 2.2, across all 4 characters (2026-08-02).** See `docs/aidlc/INFRA.md` "Video promo pipeline" section for full detail, including a critical Wan 2.2 frame-content bug (pure-noise output from a `VAEDecode` wiring error) found and fixed after initial format-only verification missed it. Current pod: `vuejmb09xepyyr` (A100 SXM 80GB — GPU choice matters here, see INFRA.md's architecture-compatibility note before switching pods again).
 
 Done:
 - Character reference images uploaded and confirmed surviving multiple pod swaps (persistent volume).
-- **One full scene generated end-to-end and independently verified**: real MP4, valid video+audio codecs, correct resolution/duration — not just a claimed success.
+- **LTX-2.3 and Wan 2.2 both generate real, frame-content-verified clips for all 4 characters** — real MP4, valid video(+audio for LTX) codecs, correct resolution/duration, AND actual decoded frames visually confirmed to show coherent character-matching video (not just container-level checks — see the Wan 2.2 noise-output bug below for why that distinction matters).
 - Root-caused and fixed a whole class of workflow-conversion bugs (widget-to-input misassignment) rather than special-casing each one.
+- Root-caused and fixed a genuine `VAEDecode`-wired-to-wrong-sampler-stage bug that made every first-round Wan 2.2 clip pure noise despite passing all format checks — found by actually extracting and viewing frames, not trusting metadata.
 - `edge-tts`, `moviepy`, `ffmpeg` all installed on the current pod.
 
 Still needed (each should land as its own reviewable sub-step, per the original caution below — still valid advice):

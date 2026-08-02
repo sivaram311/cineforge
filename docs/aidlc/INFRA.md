@@ -12,7 +12,7 @@ Tracks real RunPod cloud resources this project has provisioned (not code, not B
 | Name | `ai-film-workspace` |
 | Size | 150 GB |
 | Data center | `EU-RO-1` |
-| Attached to Pod (current) | `qviysdl1bybtav` (`big_blush_ladybug`, A100) at `/workspace` — previously `t3s9yfpovyi2um` (RTX 4090, terminated) and `f4fkrclbvqm7gi` (RTX PRO 6000 Blackwell, terminated), same volume reattached each time |
+| Attached to Pod (current) | `vuejmb09xepyyr` (`cineforge-comfyui-a100sxm`, A100 SXM) at `/workspace` — previously `t3s9yfpovyi2um` (RTX 4090), `f4fkrclbvqm7gi` (RTX PRO 6000 Blackwell), and `qviysdl1bybtav` (A100 PCIe), all terminated, same volume reattached each time |
 | Created via | RunPod REST API — `POST https://rest.runpod.io/v1/networkvolumes` |
 | Auth | Project `RUNPOD_API_KEY` (value never stored in docs) |
 | Verified | Independently confirmed via `GET /v1/networkvolumes/f0imtkpmfh` (matching fields) |
@@ -29,22 +29,23 @@ Tracks real RunPod cloud resources this project has provisioned (not code, not B
 
 | Field | Value |
 | --- | --- |
-| Pod ID | `qviysdl1bybtav` |
-| Name | `big_blush_ladybug` |
-| GPU | **NVIDIA A100 80GB PCIe** (~78.85 GB VRAM free at last verify) |
+| Pod ID | `vuejmb09xepyyr` |
+| Name | `cineforge-comfyui-a100sxm` |
+| GPU | **NVIDIA A100-SXM4-80GB** (~78.85 GB VRAM free at last verify) |
 | Data center | `EU-RO-1` |
 | Image | `ghcr.io/ai-dock/comfyui:latest` |
 | Network volume | `f0imtkpmfh` mounted at `/workspace` |
 | SSH | Working (rescue key `cineforge-rescue`); port mapping changes on restart — always fetch fresh via `GET /v2/pods` |
-| Cost | $1.39/hr |
-| Verified | Internal (SSH) `127.0.0.1:18188/system_stats` → 200, `comfyui_version` 0.29.2, `pytorch_version` 2.4.1+cu121, CUDA device `NVIDIA A100 80GB PCIe`. **`torch.cuda.get_device_capability(0)` → `(8, 0)` (`sm_80`) — explicitly listed in this PyTorch build's supported architectures**, unlike the Blackwell pod below. |
+| Cost | $1.49/hr |
+| Verified | Internal (SSH) `127.0.0.1:18188/system_stats` → 200, `comfyui_version` 0.29.0, `pytorch_version` 2.4.1+cu121, CUDA device `NVIDIA A100-SXM4-80GB`. `torch.cuda.get_device_capability(0)` → `(8, 0)` (`sm_80`) — explicitly supported by this PyTorch build, unlike the Blackwell pod below. |
 
-**Prior pods this session (both retired):**
+**Prior pods this session (all retired):**
 
 | Pod ID | GPU | Outcome |
 | --- | --- | --- |
 | `t3s9yfpovyi2um` | RTX 4090 (24GB, `sm_89`) | Terminated. ComfyUI ran fine, but the LTX-2.3 22B model + Gemma 12B text encoder together (~34GB+) OOM'd during actual sampling even after CPU-offloading the text encoder — genuinely doesn't fit in 24GB for this pipeline. |
 | `f4fkrclbvqm7gi` | RTX PRO 6000 Blackwell Workstation Edition (96–98GB, `sm_120`) | Terminated. Plenty of VRAM, but **`sm_120` (Blackwell) is not in this image's PyTorch 2.4.1 supported-architecture list** (`sm_50` through `sm_90` only) — every GPU op failed with `CUDA error: no kernel image is available for execution on the device`. Would need a PyTorch upgrade (2.6+/CUDA 12.4+) to use this generation of card with the stock image; not attempted. |
+| `qviysdl1bybtav` | A100 80GB PCIe (`sm_80`) | Terminated. Fully worked (this is where the first LTX-2.3 and face-fidelity-fix clips were generated) — stopped for cost control between sessions, but **failed to resume**: `GraphQL podResume` returned "not enough free GPUs on the host machine to start this pod" (the physical host's A100 had been reallocated elsewhere while stopped). Terminated and recreated as `vuejmb09xepyyr` (A100 SXM variant, different capacity pool) since plain PCIe A100 had no capacity at recreate time either. **Lesson:** RunPod's "stop" (vs "terminate") only reliably resumes if the same physical host still has the GPU free — not guaranteed, especially after a gap. |
 
 **Lesson for future GPU choices on this image:** stick to Ampere/Ada-or-older architectures (`sm_80` A100, `sm_86`, `sm_89` RTX 4090/L40S/RTX 6000 Ada, `sm_90` H100) unless the image's PyTorch is deliberately upgraded first. Newer Blackwell-generation cards (`sm_120`, e.g. RTX PRO 6000 Blackwell, RTX 50-series) will not run any CUDA op on this stock `ghcr.io/ai-dock/comfyui` image.
 
@@ -88,13 +89,15 @@ A user plan calls for a 6-scene / 60-second promo (4 characters: Mathura, Siva, 
 
 ### Wan 2.2 pipeline also proven — all 4 characters (2026-08-02, second pod)
 
-**Two model families now both work on this project's pod setup.** After the LTX-2.3 milestone below, also installed and proved **Wan 2.2** (dual-expert high/low-noise 14B architecture) on a fresh A100-SXM pod (`vuejmb09xepyyr`), and generated **one real clip per character** — all 4 independently verified (real files, correct h264/512x320, ~3s each, no audio track — Wan 2.2 is video-only, unlike LTX's audio+video pipeline).
+**Two model families now both work on this project's pod setup.** After the LTX-2.3 milestone below, also installed **Wan 2.2** (dual-expert high/low-noise 14B architecture) on a fresh A100-SXM pod (`vuejmb09xepyyr`), and generated **one real clip per character** — all 4 correct h264/512x320, ~3s each, no audio track (Wan 2.2 is video-only, unlike LTX's audio+video pipeline).
+
+**CRITICAL bug found and fixed (2026-08-02, later same day): first-round clips were pure noise, not real video.** The initial "all 4 verified" claim only checked container/format validity (`ffprobe` codec/resolution/duration, file size) — it never inspected actual frame content. The user caught this ("nothing other than colour") and asked for a deep dive; extracting real PNG frames via `ffmpeg` from all 4 first-round clips confirmed they were pure decoded Gaussian noise (TV-static), not video. **Root cause:** `VAEDecode`'s `samples` input was wired to the stage-1 `KSamplerAdvanced` output (`add_noise: enable`, only steps 0→2 of 4, starting from raw noise) instead of the stage-2 output (`add_noise: disable`, steps 2→end, the actual final refinement). Stage 2 ran and produced a correctly denoised latent, but its output was never consumed — the barely-denoised stage-1 latent got decoded instead. The two-stage *handoff* wiring (stage1→stage2 latent chain) was correct; only the final `VAEDecode` was pointed at the wrong stage. Fixed in the conversion script by forcing `VAEDecode.samples` to always point at `[ksampler_ids[-1], 0]` (the last/final stage) rather than trusting the raw blueprint link. **Re-verified by actually viewing extracted frames** (not just format checks) for all 4 characters after the fix — real, coherent, character-matching video confirmed in every case. Lesson: format/container validity is necessary but not sufficient — visually inspect (or statistically check pixel variance of) actual decoded frames before claiming a generation pipeline works.
 
 **Setup notes for next time:**
 - This pod's `/opt/ComfyUI` was a **separate, non-symlinked, outdated (2024-09-05) install** by default — none of the persistent-volume fixes or models were visible to it until manually replaced with a symlink to `/workspace/ComfyUI`. Always check `readlink -f /opt/ComfyUI` on a new pod before assuming the established symlink pattern holds.
 - `/workspace/ComfyUI` needed a `git checkout master && git pull` to get native `WanImageToVideo` support (the pinned `v0.29.2` tag doesn't have it), plus `pip install -r requirements.txt` for the newer frontend/comfy-kitchen packages that revision expects.
 - Wan model files (`Comfy-Org/Wan_2.2_ComfyUI_Repackaged` on HuggingFace): `umt5_xxl_fp8_e4m3fn_scaled.safetensors` (text encoder), `wan_2.1_vae.safetensors` (VAE), `wan2.2_i2v_{high,low}_noise_14B_fp8_scaled.safetensors` (dual UNETs, ~14GB each), `wan2.2_i2v_lightx2v_4steps_lora_v1_{high,low}_noise.safetensors` (4-step distilled LoRAs) — ~34GB total, all confirmed by exact byte size, not assumed.
-- The `Image to Video (Wan 2.2)` blueprint conversion hit several new instances of the same widget-misassignment bug class (this time: `CLIPLoader`'s `type`/`device` fields, `UNETLoader`'s `weight_dtype`, `WanImageToVideo`'s `batch_size`/`clip_vision_output` both getting a stray `640`), plus one genuine bug in the conversion script itself (the two-stage `KSamplerAdvanced` handoff was wired backwards — fixed by confirming each node's real output slot via `object_info` rather than guessing).
+- The `Image to Video (Wan 2.2)` blueprint conversion hit several new instances of the same widget-misassignment bug class (this time: `CLIPLoader`'s `type`/`device` fields, `UNETLoader`'s `weight_dtype`, `WanImageToVideo`'s `batch_size`/`clip_vision_output` both getting a stray `640`), the two-stage `KSamplerAdvanced` handoff needing full respecification (fixed by confirming each node's real output slot via `object_info` rather than guessing), and the `VAEDecode`-points-at-wrong-stage bug described above (the actual root cause of the noise output, found last because it silently produced a valid-looking file rather than an error).
 - **RunPod stop/resume lesson learned the hard way:** stopping (not terminating) a pod can fail to resume if the physical host's GPU gets reallocated — hit this on the first A100 pod, had to terminate and create a fresh one. Network volume survives regardless; only the pod itself is at risk.
 
 ### First real test clip generated (2026-08-02, LTX-2.3)
