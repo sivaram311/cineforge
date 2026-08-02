@@ -40,3 +40,6 @@ Thumbs.db
 # Character image assets (local binaries — do not commit)
 assets/characters/
 assets/characters/Characters.zip
+
+# Generated video test outputs (local binaries — do not commit)
+test_output/
